@@ -22,8 +22,8 @@
           ],
           "KeepJobFlowAliveWhenNoSteps": true
         },
-        "JobFlowRole": "EMR_EC2_DefaultRole",
-        "ServiceRole": "EMR_DefaultRole",
+        "JobFlowRole": "LabRole",
+        "ServiceRole": "LabRole",
         "VisibleToAllUsers": true
       },
       "Next": "CleanData"

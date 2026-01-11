@@ -1,4 +1,5 @@
 {
+  "Comment": "Academic batch processing pipeline with Spark on EMR",
   "StartAt": "CreateEMR",
   "States": {
     "CreateEMR": {
@@ -7,58 +8,71 @@
       "Parameters": {
         "Name": "academic-batch-emr",
         "ReleaseLabel": "emr-6.9.0",
-        "Applications": [{ "Name": "Spark" }],
+        "Applications": [
+          { "Name": "Spark" }
+        ],
         "Instances": {
           "InstanceGroups": [
             {
+              "Name": "Master node",
               "InstanceRole": "MASTER",
-              "InstanceType": "m5.large",
+              "InstanceType": "m5.xlarge",
               "InstanceCount": 1
             }
           ],
           "KeepJobFlowAliveWhenNoSteps": true
         },
         "JobFlowRole": "EMR_EC2_DefaultRole",
-        "ServiceRole": "EMR_DefaultRole"
+        "ServiceRole": "EMR_DefaultRole",
+        "VisibleToAllUsers": true
       },
       "Next": "CleanData"
     },
+
     "CleanData": {
       "Type": "Task",
       "Resource": "arn:aws:states:::elasticmapreduce:addStep.sync",
       "Parameters": {
         "ClusterId.$": "$.ClusterId",
         "Step": {
-          "Name": "Clean Data",
+          "Name": "Clean academic dataset",
+          "ActionOnFailure": "TERMINATE_CLUSTER",
           "HadoopJarStep": {
             "Jar": "command-runner.jar",
             "Args": [
               "spark-submit",
-              "s3://academic-data-2026/scripts/clean_data.py"
+              "--deploy-mode",
+              "cluster",
+              "s3://academic-bucket-2026/scripts/clean_data.py"
             ]
           }
         }
       },
-      "Next": "Metrics"
+      "Next": "StudentMetrics"
     },
-    "Metrics": {
+
+    "StudentMetrics": {
       "Type": "Task",
       "Resource": "arn:aws:states:::elasticmapreduce:addStep.sync",
       "Parameters": {
         "ClusterId.$": "$.ClusterId",
         "Step": {
-          "Name": "Student Metrics",
+          "Name": "Compute student metrics",
+          "ActionOnFailure": "TERMINATE_CLUSTER",
           "HadoopJarStep": {
             "Jar": "command-runner.jar",
             "Args": [
               "spark-submit",
-              "s3://academic-data-2026/scripts/student_metrics.py"
+              "--deploy-mode",
+              "cluster",
+              "s3://academic-bucket-2026/scripts/student_metrics.py"
             ]
           }
         }
       },
       "Next": "TerminateEMR"
     },
+
     "TerminateEMR": {
       "Type": "Task",
       "Resource": "arn:aws:states:::elasticmapreduce:terminateCluster",

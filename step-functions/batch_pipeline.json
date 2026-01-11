@@ -1,0 +1,71 @@
+{
+  "StartAt": "CreateEMR",
+  "States": {
+    "CreateEMR": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::elasticmapreduce:createCluster.sync",
+      "Parameters": {
+        "Name": "academic-batch-emr",
+        "ReleaseLabel": "emr-6.9.0",
+        "Applications": [{ "Name": "Spark" }],
+        "Instances": {
+          "InstanceGroups": [
+            {
+              "InstanceRole": "MASTER",
+              "InstanceType": "m5.large",
+              "InstanceCount": 1
+            }
+          ],
+          "KeepJobFlowAliveWhenNoSteps": true
+        },
+        "JobFlowRole": "EMR_EC2_DefaultRole",
+        "ServiceRole": "EMR_DefaultRole"
+      },
+      "Next": "CleanData"
+    },
+    "CleanData": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::elasticmapreduce:addStep.sync",
+      "Parameters": {
+        "ClusterId.$": "$.ClusterId",
+        "Step": {
+          "Name": "Clean Data",
+          "HadoopJarStep": {
+            "Jar": "command-runner.jar",
+            "Args": [
+              "spark-submit",
+              "s3://academic-data-2026/scripts/clean_data.py"
+            ]
+          }
+        }
+      },
+      "Next": "Metrics"
+    },
+    "Metrics": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::elasticmapreduce:addStep.sync",
+      "Parameters": {
+        "ClusterId.$": "$.ClusterId",
+        "Step": {
+          "Name": "Student Metrics",
+          "HadoopJarStep": {
+            "Jar": "command-runner.jar",
+            "Args": [
+              "spark-submit",
+              "s3://academic-data-2026/scripts/student_metrics.py"
+            ]
+          }
+        }
+      },
+      "Next": "TerminateEMR"
+    },
+    "TerminateEMR": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::elasticmapreduce:terminateCluster",
+      "Parameters": {
+        "ClusterId.$": "$.ClusterId"
+      },
+      "End": true
+    }
+  }
+}

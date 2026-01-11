@@ -36,7 +36,7 @@
         "ClusterId.$": "$.ClusterId",
         "Step": {
           "Name": "Clean academic dataset",
-          "ActionOnFailure": "TERMINATE_CLUSTER",
+          "ActionOnFailure": "CONTINUE",
           "HadoopJarStep": {
             "Jar": "command-runner.jar",
             "Args": [
@@ -58,7 +58,7 @@
         "ClusterId.$": "$.ClusterId",
         "Step": {
           "Name": "Compute student metrics",
-          "ActionOnFailure": "TERMINATE_CLUSTER",
+          "ActionOnFailure": "CONTINUE",
           "HadoopJarStep": {
             "Jar": "command-runner.jar",
             "Args": [
